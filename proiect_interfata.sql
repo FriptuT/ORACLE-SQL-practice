@@ -1,0 +1,132 @@
+CREATE TABLE abonat (
+    IDABONAT NUMBER PRIMARY KEY,
+    NUME VARCHAR2(50),
+    PRENUME VARCHAR2(50),
+    ADRESA VARCHAR2(100),
+    TELEFON VARCHAR2(15),
+    CNP VARCHAR2(13) UNIQUE,
+    CODABONAMENT NUMBER,
+    FOREIGN KEY (CODABONAMENT) REFERENCES abonament (IDABONAMENT)
+);
+
+CREATE TABLE abonament (
+    IDABONAMENT NUMBER PRIMARY KEY,
+    DENUMIRE VARCHAR2(50),
+    TIP VARCHAR2(20),
+    TRAFIC NUMBER,
+    PRET NUMBER,
+    PRETEXTRATRAFIC VARCHAR2(100)
+);
+
+CREATE TABLE contract (
+    NRCONTRACT NUMBER PRIMARY KEY,
+    IDABONAT NUMBER,
+    VALABILITATE DATE,
+    DATAINCHEIERII DATE,
+    FOREIGN KEY (IDABONAT) REFERENCES abonat (IDABONAT)
+);
+
+CREATE TABLE facturi (
+    NRFACTURA NUMBER PRIMARY KEY,
+    IDABONAT NUMBER,
+    DATAEMITERII DATE,
+    DATALIMITA DATE,
+    TOTALPLATA NUMBER,
+    FOREIGN KEY (IDABONAT) REFERENCES abonat (IDABONAT)
+);
+
+-- inserare date
+-- Inserare date in tabela abonament
+INSERT INTO abonament (IDABONAMENT, DENUMIRE, TIP, TRAFIC, PRET, PRETEXTRATRAFIC)
+VALUES (1, 'Abonament Standard', 'Mobil', 5, 25.99, 'Nelimitat national');
+
+INSERT INTO abonament (IDABONAMENT, DENUMIRE, TIP, TRAFIC, PRET, PRETEXTRATRAFIC)
+VALUES (2, 'Abonament Mid', 'Mobil', 5, 30.99, 'Nelimitat national');
+
+INSERT INTO abonament (IDABONAMENT, DENUMIRE, TIP, TRAFIC, PRET, PRETEXTRATRAFIC)
+VALUES (3, 'Abonament High', 'Mobil', 5, 38.99, 'Nelimitat national');
+
+select * from abonament;
+
+-- Inserare date in tabela abonat
+INSERT INTO abonat (IDABONAT, NUME, PRENUME, ADRESA, TELEFON, CNP, CODABONAMENT)
+VALUES (1, 'Friptu', 'Gheorghe', 'Str. Apei, Nr. 10', '0712345678', '1234567890123', 1);
+
+INSERT INTO abonat (IDABONAT, NUME, PRENUME, ADRESA, TELEFON, CNP, CODABONAMENT)
+VALUES (2, 'Friptu', 'Nelu', 'Str. Apei, Nr. 8', '0722545678', '1237567890122', 2);
+
+INSERT INTO abonat (IDABONAT, NUME, PRENUME, ADRESA, TELEFON, CNP, CODABONAMENT)
+VALUES (3, 'Friptu', 'Nicolae', 'Str. Apei, Nr. 7', '0722145778', '1234567890789', 3);
+
+select * from abonat;
+
+-- Inserare date in tabela contract
+INSERT INTO contract (NRCONTRACT, IDABONAT, VALABILITATE, DATAINCHEIERII)
+VALUES (1001, 1, TO_DATE('2024-01-01', 'YYYY-MM-DD'), TO_DATE('2024-01-01', 'YYYY-MM-DD'));
+
+INSERT INTO contract (NRCONTRACT, IDABONAT, VALABILITATE, DATAINCHEIERII)
+VALUES (1002, 2, TO_DATE('2024-01-03', 'YYYY-MM-DD'), TO_DATE('2024-01-03', 'YYYY-MM-DD'));
+
+INSERT INTO contract (NRCONTRACT, IDABONAT, VALABILITATE, DATAINCHEIERII)
+VALUES (1003, 3, TO_DATE('2024-01-07', 'YYYY-MM-DD'), TO_DATE('2024-01-07', 'YYYY-MM-DD'));
+
+select * from contract;
+
+-- Inserare date in tabela facturi
+INSERT INTO facturi (NRFACTURA, IDABONAT, DATAEMITERII, DATALIMITA, TOTALPLATA)
+VALUES (5001, 1, TO_DATE('2024-01-15', 'YYYY-MM-DD'), TO_DATE('2024-02-15', 'YYYY-MM-DD'), 25.99);
+
+INSERT INTO facturi (NRFACTURA, IDABONAT, DATAEMITERII, DATALIMITA, TOTALPLATA)
+VALUES (5002, 2, TO_DATE('2024-01-16', 'YYYY-MM-DD'), TO_DATE('2024-02-16', 'YYYY-MM-DD'), 30.99);
+
+INSERT INTO facturi (NRFACTURA, IDABONAT, DATAEMITERII, DATALIMITA, TOTALPLATA)
+VALUES (5003, 3, TO_DATE('2024-01-17', 'YYYY-MM-DD'), TO_DATE('2024-02-17', 'YYYY-MM-DD'), 38.99);
+
+select * from facturi;
+
+
+-- creare procedura pentru afisarea facturilor fiecarui abonat
+CREATE OR REPLACE PROCEDURE afisare_facturi_abonat(p_idabonat IN NUMBER) AS
+BEGIN
+    FOR factura_rec IN (SELECT * FROM facturi WHERE IDABONAT = p_idabonat) LOOP
+        DBMS_OUTPUT.PUT_LINE('Nr Factura: ' || factura_rec.NRFACTURA || 
+                             ', Data Emiterii: ' || factura_rec.DATAEMITERII ||
+                             ', Data Limita: ' || factura_rec.DATALIMITA ||
+                             ', Total Plata: ' || factura_rec.TOTALPLATA);
+    END LOOP;
+END afisare_facturi_abonat;
+/
+
+DECLARE
+    n NUMBER := &n;
+
+BEGIN
+    afisare_facturi_abonat(n);
+END;
+
+select * from abonat;
+
+-- trigger actualizare
+CREATE OR REPLACE TRIGGER update_contract
+BEFORE UPDATE ON contract
+FOR EACH ROW
+BEGIN
+    IF :NEW.VALABILITATE < SYSDATE THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Nu se poate actualiza contractul cu o valabilitate mai mica decat data curenta.');
+    END IF;
+END;
+/
+
+UPDATE contract 
+SET VALABILITATE = SYSDATE - 1,
+    DATAINCHEIERII = SYSDATE - 1
+WHERE NRCONTRACT = 1001;
+
+UPDATE contract 
+SET VALABILITATE = SYSDATE + 9,
+    DATAINCHEIERII = SYSDATE + 9
+WHERE NRCONTRACT = 1001;
+
+SELECT * FROM contract;
+
+
